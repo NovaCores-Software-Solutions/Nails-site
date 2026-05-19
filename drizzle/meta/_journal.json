@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1778192703556,
+      "tag": "0000_glossy_meggan",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778192832921,
+      "tag": "0001_acoustic_darwin",
+      "breakpoints": true
+    }
+  ]
+}
