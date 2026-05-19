@@ -7,6 +7,8 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Booking from "./pages/Booking";
 import MyAppointments from "./pages/MyAppointments";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminServices from "./pages/admin/Services";
 import AdminProfessionals from "./pages/admin/Professionals";
@@ -21,6 +23,8 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/agendar" component={Booking} />
       <Route path="/meus-agendamentos" component={MyAppointments} />
+      <Route path="/login" component={Login} />
+      <Route path="/cadastro" component={Register} />
 
       {/* Admin */}
       <Route path="/admin" component={AdminDashboard} />

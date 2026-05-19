@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
-import { getLoginUrl } from "@/const";
 import { motion } from "framer-motion";
 import { Sparkles, Clock, Star, Phone, MapPin, Instagram, ChevronRight, Scissors } from "lucide-react";
 
@@ -69,11 +68,11 @@ export default function Home() {
                 )}
               </>
             ) : (
-              <a href={getLoginUrl()}>
+              <Link href="/login">
                 <Button variant="ghost" size="sm" className="text-sm">
                   Entrar
                 </Button>
-              </a>
+              </Link>
             )}
             <Link href="/agendar">
               <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">

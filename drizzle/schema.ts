@@ -10,18 +10,16 @@ import {
   time,
 } from "drizzle-orm/mysql-core";
 
-// ─── Users (OAuth) ───────────────────────────────────────────────────────────
+// ─── Users ───────────────────────────────────────────────────────────────────
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
-  openId: varchar("openId", { length: 64 }).notNull().unique(),
-  name: text("name"),
-  email: varchar("email", { length: 320 }),
-  loginMethod: varchar("loginMethod", { length: 64 }),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   phone: varchar("phone", { length: 30 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;

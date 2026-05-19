@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Scissors, ChevronLeft, Calendar, Clock, User } from "lucide-react";
 import { Link } from "wouter";
-import { getLoginUrl } from "@/const";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -51,9 +50,9 @@ export default function MyAppointments() {
         <p className="text-muted-foreground text-center max-w-sm">
           Faça login para visualizar e gerenciar seus agendamentos.
         </p>
-        <a href={getLoginUrl()}>
+        <Link href="/login">
           <Button className="rounded-full px-8">Entrar com minha conta</Button>
-        </a>
+        </Link>
         <Link href="/">
           <Button variant="ghost" size="sm">
             <ChevronLeft className="w-4 h-4 mr-1" /> Voltar ao início

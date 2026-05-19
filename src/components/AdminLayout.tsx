@@ -1,5 +1,4 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,9 +56,9 @@ export default function AdminLayout({ children, title }: AdminLayoutProps) {
         <p className="text-muted-foreground text-center max-w-sm">
           Faça login para acessar o painel administrativo.
         </p>
-        <a href={getLoginUrl()}>
+        <Link href="/login">
           <Button className="rounded-full px-8">Entrar</Button>
-        </a>
+        </Link>
       </div>
     );
   }
