@@ -10,7 +10,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate --config ../drizzle.config.ts && drizzle-kit migrate --config ../drizzle.config.ts"
+    "db:push": "cd .. && set \"NODE_PATH=client/node_modules\" && dotenv -e .env -- drizzle-kit push --config drizzle.config.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
@@ -90,6 +90,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
+    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
     "pnpm": "^10.15.1",
@@ -104,7 +105,7 @@
     "vitest": "^2.1.4"
   },
   "packageManager": "pnpm@10.4.1+sha512.c753b6c3ad7afa13af388fa6d808035a008e30ea9993f58c6663e2bc5ff21679aa834db094987129aa4d488b86df57f7b634981b2f827cdcacc698cc0cfb88af",
-    "overrides": {
-      "tailwindcss>nanoid": "3.3.7"
-    }
+  "overrides": {
+    "tailwindcss>nanoid": "3.3.7"
   }
+}
