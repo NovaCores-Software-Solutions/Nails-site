@@ -36,6 +36,8 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+  // Health check (usado pelo UptimeRobot para manter o servidor ativo)
+  app.get("/health", (_req, res) => res.json({ status: "ok" }));
   // tRPC API
   app.use(
     "/api/trpc",
