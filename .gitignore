@@ -13,6 +13,7 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
+.ENV
 
 # IDE and editor files
 .vscode/
@@ -20,6 +21,7 @@ build/
 *.swp
 *.swo
 *~
+*.code-workspace
 
 # OS generated files
 .DS_Store
@@ -28,6 +30,9 @@ build/
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+
+# Dev tools / logs
+.manus-logs/
 Thumbs.db
 
 # Logs
