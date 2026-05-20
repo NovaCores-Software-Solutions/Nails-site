@@ -1,0 +1,219 @@
+========================================================
+  NAIL STUDIO — DOCUMENTAÇÃO DO SISTEMA
+  Criado em: 19/05/2026
+========================================================
+
+-----------------------------------------------------------
+1. VISÃO GERAL
+-----------------------------------------------------------
+Site de salão de unhas com:
+- Página pública (Home, Agendamento, Login, Cadastro)
+- Área do cliente (Meus Agendamentos)
+- Painel Admin (Dashboard, Agendamentos, Serviços, Profissionais, Clientes, Financeiro)
+
+Stack:
+- Frontend: React 19 + Vite 7 + TypeScript + TailwindCSS
+- Backend: Express + tRPC + TypeScript (Node 24)
+- Banco: MySQL no TiDB Cloud Serverless (banco: nails_db)
+- ORM: Drizzle ORM (dialect: mysql)
+- Auth: JWT próprio com jose (email + senha com bcryptjs)
+- Deploy: Render (web service, free tier)
+- Keep-alive: UptimeRobot pinga /health a cada 5 min
+
+-----------------------------------------------------------
+2. REPOSITÓRIO
+-----------------------------------------------------------
+GitHub: https://github.com/NovaCores-Software-Solutions/Nails-site
+Branch principal: main
+Render auto-deploya a cada push na main.
+
+-----------------------------------------------------------
+3. ESTRUTURA DE PASTAS
+-----------------------------------------------------------
+/
+├── src/              → Frontend React
+│   ├── pages/        → Home, Booking, Login, Register, MyAppointments, admin/*
+│   ├── components/   → AdminLayout, DashboardLayout, ui/*
+│   ├── _core/hooks/  → useAuth.ts
+│   ├── lib/          → trpc.ts
+│   └── const.ts      → LOGIN_PATH = "/login"
+├── server/           → Backend Express
+│   ├── routers.ts    → Todos os endpoints tRPC (auth, services, professionals, appointments, clients, financial)
+│   ├── db.ts         → Funções do banco (getUserByEmail, getUserById, createUser, etc.)
+│   ├── _core/
+│   │   ├── index.ts     → Entry point do servidor Express
+│   │   ├── sdk.ts       → JWT auth (createSessionToken, verifySession, authenticateRequest)
+│   │   ├── env.ts       → Variáveis de ambiente (SESSION_SECRET, DATABASE_URL, etc.)
+│   │   ├── oauth.ts     → Vazio (Manus OAuth foi removido)
+│   │   ├── context.ts   → Contexto tRPC (usa sdk.authenticateRequest)
+│   │   ├── trpc.ts      → publicProcedure, protectedProcedure, adminProcedure
+│   │   └── vite.ts      → Dev server e serve static em produção
+├── shared/           → Tipos e constantes compartilhados
+│   ├── const.ts      → COOKIE_NAME, ONE_YEAR_MS
+│   └── types.ts
+├── drizzle/
+│   └── schema.ts     → Schema do banco
+├── drizzle.config.ts → Config do drizzle-kit (usa SSL para TiDB)
+├── vite.config.ts    → Config do Vite (usa import.meta.dirname, não __dirname)
+├── package.json      → Scripts: dev, build, start, db:push
+└── tsconfig.json
+
+-----------------------------------------------------------
+4. VARIÁVEIS DE AMBIENTE
+-----------------------------------------------------------
+Arquivo local: .env (não commitado no git)
+No Render: configuradas manualmente no painel
+
+Variáveis necessárias:
+  DATABASE_URL=mysql://usuario:senha@host:4000/nails_db
+  SESSION_SECRET=nails-secret-2026-xkzp91   ← já configurado no Render
+  NODE_ENV=production                         ← já configurado no Render
+
+IMPORTANTE: o server/db.ts conecta via DATABASE_URL sem SSL explícito.
+O drizzle.config.ts tem SSL configurado (para o db:push local funcionar no hotspot).
+Se o servidor Render falhar ao conectar no TiDB, pode ser necessário adicionar
+SSL no db.ts também (ver seção 7 - Problemas conhecidos).
+
+-----------------------------------------------------------
+5. SISTEMA DE AUTENTICAÇÃO
+-----------------------------------------------------------
+Foi migrado do Manus OAuth para email + senha próprio.
+
+Fluxo:
+1. Usuário acessa /cadastro → preenche nome, email, senha, telefone
+2. Frontend chama trpc.auth.register → server cria hash da senha com bcryptjs
+3. Server insere usuário no banco com role = "user"
+4. Server cria JWT com jose (userId + role), salva no cookie "app_session_id"
+5. Usuário está logado
+
+Para login:
+1. Usuário acessa /login → preenche email + senha
+2. Frontend chama trpc.auth.login → server valida email/senha
+3. Server cria novo JWT e salva no cookie
+
+Para admin:
+- Criar conta normalmente via /cadastro
+- Promover para admin via SQL no TiDB:
+  UPDATE users SET role = 'admin' WHERE email = 'SEU_EMAIL';
+
+Roles:
+  "user"  → cliente do salão (acesso a /meus-agendamentos)
+  "admin" → dono/funcionário (acesso a /admin/*)
+
+Cookie: "app_session_id" (httpOnly, 1 ano de duração)
+JWT secret: SESSION_SECRET (env var no Render)
+
+-----------------------------------------------------------
+6. BANCO DE DADOS — SCHEMA
+-----------------------------------------------------------
+Banco: nails_db (TiDB Cloud Serverless)
+Host: gateway01.us-east-1.prod.aws.tidbcloud.com:4000
+Usuário: 2pg1h1ie3Ygbfo9.root
+
+Tabelas:
+  users:
+    id, name (NOT NULL), email (NOT NULL UNIQUE),
+    passwordHash (NOT NULL), role (user|admin),
+    phone, createdAt, updatedAt
+
+  services:
+    id, name, description, durationMinutes, price,
+    category (manicure|pedicure|alongamento|manutencao|outro),
+    active, createdAt, updatedAt
+
+  professionals:
+    id, name, bio, phone, specialties (JSON string),
+    active, createdAt, updatedAt
+
+  availability:
+    id, professionalId, dayOfWeek (0=Dom...6=Sab),
+    startTime, endTime, createdAt
+
+  appointments:
+    id, userId (null = guest), professionalId, serviceId,
+    clientName, clientPhone, clientEmail, scheduledAt, endsAt,
+    status (pending|confirmed|completed|cancelled),
+    notes, price, createdAt, updatedAt
+
+Para rodar migrações localmente (precisa estar no hotspot/rede sem bloqueio da porta 4000):
+  pnpm db:push
+
+-----------------------------------------------------------
+7. PROBLEMAS CONHECIDOS / O QUE FALTA RESOLVER
+-----------------------------------------------------------
+
+PROBLEMA ATUAL (19/05/2026):
+  Ao tentar registrar no site, aparece erro:
+  "Failed query: select id, name, email, passwordHash, ... from users where users.email = ?"
+
+  Causa mais provável:
+  O servidor Render está falhando ao conectar no banco TiDB Cloud.
+  O arquivo server/db.ts usa:
+    _db = drizzle(process.env.DATABASE_URL);
+  Sem SSL explícito. O TiDB Cloud Serverless REQUER SSL.
+
+  SOLUÇÃO NECESSÁRIA:
+  Atualizar server/db.ts para usar SSL na conexão mysql2.
+  Trocar:
+    _db = drizzle(process.env.DATABASE_URL);
+  Por:
+    import mysql from "mysql2/promise";
+    const connection = await mysql.createConnection({
+      uri: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: true }
+    });
+    _db = drizzle(connection);
+
+  Ou adicionar ?ssl={"rejectUnauthorized":true} no DATABASE_URL do Render.
+
+OUTROS PONTOS PENDENTES:
+  - Não há forma de resetar senha (esqueci minha senha) — funcionalidade não implementada
+  - Admin é promovido manualmente via SQL — poderia ter uma tela de gestão
+  - Agendamento de visitantes (sem login) funciona, mas não vincula ao usuário logado automaticamente
+  - Notificações (email/WhatsApp) estão nos arquivos mas precisam de configuração de API keys
+
+-----------------------------------------------------------
+8. COMANDOS ÚTEIS
+-----------------------------------------------------------
+Rodar localmente (dev):
+  pnpm dev
+
+Build:
+  pnpm build
+
+Start produção:
+  pnpm start
+
+Atualizar banco (precisa hotspot ou rede sem bloqueio porta 4000):
+  pnpm db:push
+
+Commit e deploy:
+  git add -A
+  git commit -m "mensagem"
+  git push
+  (Render deploya automaticamente)
+
+-----------------------------------------------------------
+9. RENDER — CONFIGURAÇÃO
+-----------------------------------------------------------
+URL: https://nails-site-dja1.onrender.com (ou similar)
+Build Command: pnpm install --frozen-lockfile; pnpm run build
+Start Command: pnpm run start
+Root Directory: (vazio)
+Node Version: 24
+
+Environment Variables configuradas:
+  NODE_ENV=production
+  SESSION_SECRET=nails-secret-2026-xkzp91
+  DATABASE_URL=mysql://2pg1h1ie3Ygbfo9.root:SENHA@gateway01.us-east-1.prod.aws.tidbcloud.com:4000/nails_db
+
+-----------------------------------------------------------
+10. UPTIMEROBOT
+-----------------------------------------------------------
+Monitora: https://nails-site-dja1.onrender.com/health
+Intervalo: 5 minutos
+Impede que o Render (free tier) durma.
+
+========================================================
+  FIM DO DOCUMENTO
+========================================================
